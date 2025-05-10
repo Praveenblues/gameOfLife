@@ -38,17 +38,21 @@ class GameOfLifeViewModel: ObservableObject {
     
     
     func updateState() {
+        print("previouslyModifiedCells are")
+        print(previouslyModifiedCells)
+        
         var cellsToModify: [Int] = []
         for modifiedCell in previouslyModifiedCells {
             cellsToModify.append(modifiedCell)
-            cellsToModify.append(contentsOf: surroundingCells[modifiedCell] ?? [])
+            cellsToModify.append(contentsOf: surroundingCells[modifiedCell] ?? getSurroundingCells(around: modifiedCell))
         }
         cellsToModify = Array(Set(cellsToModify))
+        previouslyModifiedCells.removeAll()
         cellsToModify.forEach { modifyCell(index: $0) }
     }
     
     func modifyCell(index: Int) {
-        let numberOfLivingNeighbors = getSurroundingCells(around: index).filter { cells[$0].isAlive }.count
+        let numberOfLivingNeighbors = (surroundingCells[index] ?? getSurroundingCells(around: index)).filter { cells[$0].isAlive }.count
         if cells[index].isAlive {
             if numberOfLivingNeighbors < 2 || numberOfLivingNeighbors > 3 {
                 cells[index].isAlive = false
@@ -62,8 +66,84 @@ class GameOfLifeViewModel: ObservableObject {
         }
     }
     
+    enum Edge {
+        case Top
+        case Bottom
+        case Left
+        case Right
+    }
+    
     func getSurroundingCells(around center: Int) -> [Int] {
-        []
+        let top = center - columnsCount
+        let bottom = center + columnsCount
+        let left = center - 1
+        let right = center + 1
+        let topLeft = center-1-columnsCount
+        let topRight = center+1-columnsCount
+        let bottomLeft = center-1+columnsCount
+        let bottomRight = center+1+columnsCount
+        
+        if center == 0 {
+            return [right,bottom,bottomRight]
+        }
+        if center == columnsCount-1 {
+            return [left,bottomLeft,bottom]
+        }
+        if center == count-1 {
+            return [left,topLeft,top]
+        }
+        if center == count-columnsCount+1 {
+            return [right,top,topRight]
+        }
+        
+        // Adding 4 directional cells
+        var edge: Edge?
+        var result: [Int] = []
+        if !(center % columnsCount == 0) {
+            // Not on left edge
+            result.append(left)
+        } else {
+            edge = .Left
+        }
+        if !((center + 1) % columnsCount == 0) {
+            // Not on right edge
+            result.append(right)
+        } else {
+            edge = .Right
+        }
+        if !(0...columnsCount-1).contains(center) {
+            // Not on Top edge
+            result.append(top)
+        } else {
+            edge = .Top
+        }
+        if !((count-columnsCount+1)...(count-1)).contains(center) {
+            // Not on Bottom edge
+            result.append(bottom)
+        } else {
+            edge = .Bottom
+        }
+        
+        // Adding 4 diagonal cells
+        let topdiagonals: [Int] = [center-1-columnsCount, center+1-columnsCount]
+        if let edge = edge {
+            switch edge {
+                case .Left:
+                result.append(contentsOf: [topRight, bottomRight])
+            case .Right:
+                result.append(contentsOf: [topLeft, bottomLeft])
+            case .Top:
+                result.append(contentsOf: [bottomLeft, bottomRight])
+            case .Bottom:
+                result.append(contentsOf: [topLeft, topRight])
+            }
+        } else {
+            // Not on any of the edges
+            result.append(contentsOf: [topLeft, topRight, bottomLeft, bottomRight])
+        }
+        result.removeAll(where: {$0 >= count})
+        surroundingCells[center] = result
+        return result
     }
     
     
@@ -73,18 +153,26 @@ class GameOfLifeViewModel: ObservableObject {
     func cellTapped(index: Int) {
         cells[index].isAlive.toggle()
         previouslyModifiedCells.append(index)
+        surroundingCells[index] = getSurroundingCells(around: index)
     }
     
     func startTimer() {
-        timer = Timer.publish(every: 1, on: .main, in: .default)
+        timer = Timer.publish(every: 0.5, on: .main, in: .default)
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
-                self?.previouslyModifiedCells.removeAll()
                 self?.updateState()
             })
     }
     
     func stop() {
         timer?.cancel()
+    }
+    
+    func clearAll() {
+        timer?.cancel()
+        timer = nil
+        for index in cells.indices {
+            cells[index].isAlive = false
+        }
     }
 }

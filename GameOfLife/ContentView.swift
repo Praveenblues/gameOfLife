@@ -27,6 +27,10 @@ struct ContentView: View {
 }
 
 
+extension Color {
+    static let lime: Color = .init(red: 203/255, green: 232/255, blue: 100/255)
+}
+
 struct BodyView: View {
     var itemSize: CGFloat = 20
     var count = 0
@@ -50,21 +54,34 @@ struct BodyView: View {
                     viewModel.startTimer()
                 } label: {
                     Text("Start")
-                        .frame(width: 50, height: 50, alignment: .center)
-                        .background(Color.green)
+                        .frame(width: 60, height: 60, alignment: .center)
+                        .background(Color.lime)
                         .clipShape(Circle())
+                }
+                Spacer()
+                Button {
+                    viewModel.clearAll()
+                } label: {
+                    Text("X")
+                        .frame(width: 50, height: 50, alignment: .center)
+                        .foregroundStyle(Color.white)
+                        .background(Color.red)
+                        .clipShape(Circle())
+                        .offset(y: 15)
                 }
                 Spacer()
                 Button {
                     viewModel.stop()
                 } label: {
-                    Text("Stop")
-                        .frame(width: 50, height: 50, alignment: .center)
-                        .background(Color.green)
+                    Text("Pause")
+                        .padding(5)
+                        .frame(width: 60, height: 60, alignment: .center)
+                        .background(Color.lime)
                         .clipShape(Circle())
                 }
 
             }
+            .opacity(0.75)
             .padding()
         }
     }
