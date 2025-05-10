@@ -6,7 +6,7 @@
 //
 
 struct Cell: Hashable {
-    var index: Int?
+    var index: Int
     var isAlive = false
 }
 
@@ -81,6 +81,7 @@ class GameOfLifeViewModel: ObservableObject {
     }
     
     func getSurroundingCells(around center: Int) -> [Int] {
+        // print("getSurroundingCells call for \(center)")
         let top = center - columnsCount
         let bottom = center + columnsCount
         let left = center - 1
@@ -132,7 +133,6 @@ class GameOfLifeViewModel: ObservableObject {
         }
         
         // Adding 4 diagonal cells
-        let topdiagonals: [Int] = [center-1-columnsCount, center+1-columnsCount]
         if let edge = edge {
             switch edge {
                 case .Left:
@@ -160,11 +160,13 @@ class GameOfLifeViewModel: ObservableObject {
     func cellTapped(index: Int) {
         cells[index].isAlive.toggle()
         previouslyModifiedCells.append(index)
-        surroundingCells[index] = getSurroundingCells(around: index)
+        if surroundingCells[index] == nil {
+            surroundingCells[index] = getSurroundingCells(around: index)
+        }
     }
     
     func startTimer() {
-        timer = Timer.publish(every: 0.25, on: .main, in: .default)
+        timer = Timer.publish(every: 0.1, on: .main, in: .default)
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
                 self?.updateState()

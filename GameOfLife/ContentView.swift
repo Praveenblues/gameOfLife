@@ -88,10 +88,10 @@ struct BodyView: View {
     
     @ViewBuilder func makeGrid(columns: [GridItem]) -> some View {
         LazyVGrid(columns: columns, spacing: 0) {
-            ForEach(Array(viewModel.cells.enumerated()), id: \.element) { (index, item) in
+            ForEach(viewModel.cells, id: \.self) { item in
                 Button {
-                    print("tapped \(index)")
-                    viewModel.cellTapped(index: index)
+                    print("tapped \(item.index)")
+                    viewModel.cellTapped(index: item.index)
                 } label: {
                     Rectangle()
                         .fill(item.isAlive ? Color(red: 255/255, green: 200/255, blue: 150/255) : Color.white)
