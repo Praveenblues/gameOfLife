@@ -38,32 +38,39 @@ class GameOfLifeViewModel: ObservableObject {
     
     
     func updateState() {
-        print("previouslyModifiedCells are")
-        print(previouslyModifiedCells)
+//        print("previouslyModifiedCells are")
+//        print(previouslyModifiedCells)
         
-        var cellsToModify: [Int] = []
+        var cellsToCheck: [Int] = []
         for modifiedCell in previouslyModifiedCells {
-            cellsToModify.append(modifiedCell)
-            cellsToModify.append(contentsOf: surroundingCells[modifiedCell] ?? getSurroundingCells(around: modifiedCell))
+            cellsToCheck.append(modifiedCell)
+            cellsToCheck.append(contentsOf: surroundingCells[modifiedCell] ?? getSurroundingCells(around: modifiedCell))
         }
-        cellsToModify = Array(Set(cellsToModify))
+        cellsToCheck = Array(Set(cellsToCheck))
         previouslyModifiedCells.removeAll()
-        cellsToModify.forEach { modifyCell(index: $0) }
+        for index in getCellsToToggle(cellsToCheck: cellsToCheck) {
+            cells[index].isAlive.toggle()
+        }
     }
     
-    func modifyCell(index: Int) {
-        let numberOfLivingNeighbors = (surroundingCells[index] ?? getSurroundingCells(around: index)).filter { cells[$0].isAlive }.count
-        if cells[index].isAlive {
-            if numberOfLivingNeighbors < 2 || numberOfLivingNeighbors > 3 {
-                cells[index].isAlive = false
-                previouslyModifiedCells.append(index)
-            }
-        } else {
-            if numberOfLivingNeighbors == 3 {
-                cells[index].isAlive = true
-                previouslyModifiedCells.append(index)
+    func getCellsToToggle(cellsToCheck: [Int]) -> [Int] {
+        var cellsToModify: [Int] = []
+        for index in cellsToCheck {
+            let numberOfLivingNeighbors = (surroundingCells[index] ?? getSurroundingCells(around: index)).filter { cells[$0].isAlive }.count
+            print("living neighbors of \(index) is \(numberOfLivingNeighbors)")
+            if cells[index].isAlive {
+                if numberOfLivingNeighbors < 2 || numberOfLivingNeighbors > 3 {
+                    cellsToModify.append(index)
+                    previouslyModifiedCells.append(index)
+                }
+            } else {
+                if numberOfLivingNeighbors == 3 {
+                    cellsToModify.append(index)
+                    previouslyModifiedCells.append(index)
+                }
             }
         }
+        return cellsToModify
     }
     
     enum Edge {
@@ -157,7 +164,7 @@ class GameOfLifeViewModel: ObservableObject {
     }
     
     func startTimer() {
-        timer = Timer.publish(every: 0.5, on: .main, in: .default)
+        timer = Timer.publish(every: 0.25, on: .main, in: .default)
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
                 self?.updateState()

@@ -93,13 +93,15 @@ struct BodyView: View {
                     print("tapped \(index)")
                     viewModel.cellTapped(index: index)
                 } label: {
-                    Rectangle().fill(item.isAlive ? Color.red : Color.white)
+                    Rectangle()
+                        .fill(item.isAlive ? Color(red: 255/255, green: 200/255, blue: 150/255) : Color.white)
                 }
                 .frame(width: itemSize, height: itemSize)
                 .overlay {
                     Rectangle()
                         .stroke(Color.gray, lineWidth: 1)
                         .opacity(0.25)
+                        .background(Color.clear)
                 }
                 .buttonStyle(.plain)
             }
