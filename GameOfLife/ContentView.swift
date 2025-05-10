@@ -9,80 +9,88 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+        var itemSize: CGFloat = 20
+        var body: some View {
+            GeometryReader { geometry in
+                let (totalWidth, totalHeight) = (geometry.size.width, geometry.size.height)
+                let spacing: CGFloat = 0
+                let columnsCount = max(Int((totalWidth + spacing) / (itemSize + spacing)), 1)
+                let rowsCount = max(Int((totalHeight + spacing) / (itemSize + spacing)), 1)
+                ZStack(alignment: .bottom) {
+                    BodyView(count: rowsCount * columnsCount, columnsCount: columnsCount)
+                    
+                }
+                
+            }
+            .ignoresSafeArea()
+        }
+}
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
 
+struct BodyView: View {
+    var itemSize: CGFloat = 20
+    var count = 0
+    var columnsCount = 1
+    
+    @ObservedObject var viewModel: GameOfLifeViewModel
+    
+    init(itemSize: CGFloat = 20, count: Int, columnsCount: Int) {
+        self.itemSize = itemSize
+        self.count = count
+        self.columnsCount = columnsCount
+        self.viewModel = GameOfLifeViewModel(count: count, columnsCount: columnsCount)
+    }
+    
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
-                    }
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: columnsCount)
+        ZStack(alignment: .bottom) {
+            makeGrid(columns: columns)
+            HStack {
+                Button {
+                    viewModel.startTimer()
+                } label: {
+                    Text("Start")
+                        .frame(width: 50, height: 50, alignment: .center)
+                        .background(Color.green)
+                        .clipShape(Circle())
                 }
-                .onDelete(perform: deleteItems)
+                Spacer()
+                Button {
+                    viewModel.stop()
+                } label: {
+                    Text("Stop")
+                        .frame(width: 50, height: 50, alignment: .center)
+                        .background(Color.green)
+                        .clipShape(Circle())
+                }
+
             }
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-            Text("Select an item")
+            .padding()
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+    
+    @ViewBuilder func makeGrid(columns: [GridItem]) -> some View {
+        LazyVGrid(columns: columns, spacing: 0) {
+            ForEach(Array(viewModel.cells.enumerated()), id: \.element) { (index, item) in
+                Button {
+                    print("tapped \(index)")
+                    viewModel.cellTapped(index: index)
+                } label: {
+                    Rectangle().fill(item.isAlive ? Color.red : Color.white)
+                }
+                .frame(width: itemSize, height: itemSize)
+                .overlay {
+                    Rectangle()
+                        .stroke(Color.gray, lineWidth: 1)
+                        .opacity(0.25)
+                }
+                .buttonStyle(.plain)
             }
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
+        .padding(0)
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
-
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView()
 }
