@@ -12,15 +12,17 @@ struct Cell: Hashable {
 
 import Foundation
 import Combine
+import SwiftUI
 
 class GameOfLifeViewModel: ObservableObject {
     @Published var cells: [Cell] = []
-    var timer: AnyCancellable?
-    var previouslyModifiedCells: [Int] = []
-    var surroundingCells: [Int:[Int]] = [:]
+    private var count: Int
+    private var columnsCount: Int
+    private var timer: AnyCancellable?
+    private var previouslyModifiedCells: [Int] = []
+    private var surroundingCells: [Int:[Int]] = [:]
     
-    var count: Int
-    var columnsCount: Int
+    @Published var sliderValue: Float = UserDefaultsManager.shared.getValue(for: .SpeedSliderValue) as? Float ?? Constants.defaultSpeedSliderValue
     
     init(count: Int = 0, columnsCount: Int = 0) {
         self.count = count
@@ -166,7 +168,7 @@ class GameOfLifeViewModel: ObservableObject {
     }
     
     func startTimer() {
-        timer = Timer.publish(every: 0.1, on: .main, in: .default)
+        timer = Timer.publish(every: (1-0.9*Double(sliderValue)), on: .main, in: .default)
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
                 self?.updateState()
@@ -183,5 +185,20 @@ class GameOfLifeViewModel: ObservableObject {
         for index in cells.indices {
             cells[index].isAlive = false
         }
+    }
+    
+    func previewSpeed() {
+        timer?.cancel()
+        startTimer()
+    }
+    
+    func settingDiscarded() {
+        timer?.cancel()
+        sliderValue = UserDefaultsManager.shared.getValue(for: .SpeedSliderValue) as? Float ?? Constants.defaultSpeedSliderValue
+        startTimer()
+    }
+    
+    func saveSliderToUserDefaults() {
+        UserDefaultsManager.shared.setValue(value: sliderValue, for: .SpeedSliderValue)
     }
 }

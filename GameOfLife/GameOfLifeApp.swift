@@ -15,6 +15,7 @@ struct GameOfLifeApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .readSafeAreaInsets()
         }
     }
 }
